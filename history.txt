@@ -1,0 +1,50 @@
+[
+    {
+        "role": "user",
+        "content": [
+            {
+                "text": "echo 'password123' > pass.txt"
+            }
+        ]
+    },
+    {
+        "role": "assistant",
+        "content": [
+            {
+                "text": "pass.txt"
+            }
+        ]
+    },
+    {
+        "role": "user",
+        "content": [
+            {
+                "text": "ls"
+            }
+        ]
+    },
+    {
+        "role": "assistant",
+        "content": [
+            {
+                "text": "Desktop\nDocuments\nDownloads\npass.txt\nSharePoint\nweb.config\nwwwroot"
+            }
+        ]
+    },
+    {
+        "role": "user",
+        "content": [
+            {
+                "text": "cat pass.txt"
+            }
+        ]
+    },
+    {
+        "role": "assistant",
+        "content": [
+            {
+                "text": "password123"
+            }
+        ]
+    }
+]
