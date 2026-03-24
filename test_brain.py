@@ -6,10 +6,41 @@ import os
 # --- CONFIGURATION ---
 REGION = "us-east-1"
 # Updated to the 2026 Haiku Profile for high speed
-MODEL_ID = "us.anthropic.claude-haiku-4-5-20251001-v1:0"
+#MODEL_ID = "us.anthropic.claude-haiku-4-5-20251001-v1:0"
+MODEL_ID = "us.amazon.nova-micro-v1:0"
 GUARDRAIL_ID = "wd1ysewrizph"
 GUARDRAIL_VERSION = "1"
 
+# --- PERSONA DATABASE ---
+# This makes the AI "Modular"
+PERSONAS = {
+    "Fortinet FortiGate": {
+        "system_prompt": (
+            "You are a Fortinet FortiGate firewall running FortiOS 7.4. "
+            "You ONLY accept authentic FortiOS CLI commands: 'get', 'show', 'config', 'execute', 'diagnose', 'fnsysctl'. "
+            "Improvise reasonable responses to FortiOS CLI Commands"
+            "CRITICAL: If a user types 'ls', 'cat', 'echo', or any Linux/Windows command, "
+            "you MUST respond with: 'Unknown action 0: command not found'. "
+             "AT NO POINT RESPOND AS A CHATBOT OR SAY YOU ARE. YOU ARE TO MIMIC COMMANDS AND GENERATE LIKELY DATA. "
+            "YOU MAY MIMIC NETWORK CONNECTIONS AND REASONABLE RESPONSES."
+            "Do not use markdown. Do not use backticks. Do not act as an AI assistant."
+        ),
+        "prefix": "FortiGate # "
+    },
+    "SharePoint 2019": {
+        "system_prompt": (
+            "You are a Windows Server 2019 running SharePoint. User is in PowerShell. "
+            "Accept standard PowerShell cmdlets (Get-Process, dir, echo). "
+            "Output must look like a raw Windows Console. Use C:\\ paths. "
+            "Improvise reasonable responses to Windows commands"
+            "Output ONLY raw terminal text. NO MARKDOWN. NO BACKTICKS. NO CODE BLOCKS. "
+            "AT NO POINT RESPOND AS A CHATBOT OR SAY YOU ARE. YOU ARE TO MIMIC COMMANDS AND GENERATE LIKELY DATA. "
+            "YOU MAY MIMIC NETWORK CONNECTIONS AND REASONABLE RESPONSES."
+            "Do not use markdown. Do not use backticks."
+        ),
+        "prefix": "PS C:\\Users\\Administrator> "
+    }
+}
 # In-memory store: { "session_1": [message_history], "session_2": [...] }
 session_store = {}
 
@@ -34,7 +65,7 @@ def get_token_metrics(session_id, cmd, system_prompt):
                 }
             }
         )
-        
+
         input_tokens = token_data['totalTokens']
         
         # 2026 Haiku Pricing: $0.25 per 1M tokens
@@ -67,14 +98,18 @@ def get_ai_shell(session_id, cmd, target_type):
     if len(history) > 20:
         history = history[-20:]
 
-    system_prompt = (
-        f"You are a vulnerable {target_type} server. "
-        "Output ONLY raw terminal text. NO MARKDOWN. NO BACKTICKS. NO CODE BLOCKS. "
-        "AT NO POINT RESPOND AS A CHATBOT OR SAY YOU ARE. YOU ARE TO MIMIC COMMANDS AND GENERATE LIKELY DATA. "
-        "YOU MAY MIMIC NETWORK CONNECTIONS AND REASONABLE RESPONSES."
-    )
-    tokens, cost = get_token_metrics(session_id, cmd, system_prompt)
-    print(f"[PRICE CHECK] Sending {tokens} tokens. Est Cost: ${cost:.6f}")
+#    system_prompt = (
+#        f"You are a vulnerable {target_type} server. "
+#        "Output ONLY raw terminal text. NO MARKDOWN. NO BACKTICKS. NO CODE BLOCKS. "
+#        "AT NO POINT RESPOND AS A CHATBOT OR SAY YOU ARE. YOU ARE TO MIMIC COMMANDS AND GENERATE LIKELY DATA. "
+#        "YOU MAY MIMIC NETWORK CONNECTIONS AND REASONABLE RESPONSES."
+#    )
+
+    persona = PERSONAS.get(target_type, PERSONAS["SharePoint 2019"])
+    system_prompt = persona["system_prompt"]
+    # Haiku does not allow for this to happen. 
+    #tokens, cost = get_token_metrics(session_id, cmd, system_prompt)
+    #print(f"[PRICE CHECK] Sending {tokens} tokens. Est Cost: ${cost:.6f}")
     start_time = time.time()
     
     try:
@@ -109,17 +144,30 @@ def get_ai_shell(session_id, cmd, target_type):
     except ClientError as e:
         return f"System Error: {str(e)}"
 
+
+
+# --- TEST THE MODULARITY ---
+if __name__ == "__main__":
+    # Test 1: FortiGate (Should reject 'ls')
+    print("--- TESTING FORTIGATE ---")
+    print(get_ai_shell("tester_1", "ls", "Fortinet FortiGate"))
+    print(get_ai_shell("tester_1", "get system status", "Fortinet FortiGate"))
+
+    # Test 2: SharePoint (Should accept 'ls' or 'dir')
+    print("\n--- TESTING SHAREPOINT ---")
+    print(get_ai_shell("tester_2", "dir", "SharePoint 2019"))
+
 # --- TEST SCENARIO: PROVING PERSISTENCE ---
 
 # Step 1: Create a file
-print("--- TEST 1: Creating a file ---")
-print(get_ai_shell("attacker_1", "echo 'password123' > pass.txt", "SharePoint 2019"))
+# print("--- TEST 1: Creating a file ---")
+# print(get_ai_shell("attacker_1", "echo 'password123' > pass.txt", "Fortinet Fortigate"))
 
 # Step 2: See if it exists in a new command
-print("\n--- TEST 2: Listing files (Persistence Check) ---")
-print(get_ai_shell("attacker_1", "ls", "SharePoint 2019"))
+# print("\n--- TEST 2: Listing files (Persistence Check) ---")
+# print(get_ai_shell("attacker_1", "ls", "Fortinet Fortigate"))
 
 # Step 3: Verify contents
-print("\n--- TEST 3: Reading the file ---")
-print(get_ai_shell("attacker_1", "cat pass.txt", "SharePoint 2019"))
+# print("\n--- TEST 3: Reading the file ---")
+# print(get_ai_shell("attacker_1", "cat pass.txt", "Fortinet Fortigate"))
 

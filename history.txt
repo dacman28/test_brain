@@ -3,7 +3,7 @@
         "role": "user",
         "content": [
             {
-                "text": "echo 'password123' > pass.txt"
+                "text": "dir"
             }
         ]
     },
@@ -11,39 +11,7 @@
         "role": "assistant",
         "content": [
             {
-                "text": "pass.txt"
-            }
-        ]
-    },
-    {
-        "role": "user",
-        "content": [
-            {
-                "text": "ls"
-            }
-        ]
-    },
-    {
-        "role": "assistant",
-        "content": [
-            {
-                "text": "Desktop\nDocuments\nDownloads\npass.txt\nSharePoint\nweb.config\nwwwroot"
-            }
-        ]
-    },
-    {
-        "role": "user",
-        "content": [
-            {
-                "text": "cat pass.txt"
-            }
-        ]
-    },
-    {
-        "role": "assistant",
-        "content": [
-            {
-                "text": "password123"
+                "text": "Directory of C:\\\n\nMode                LastWriteTime         Length Name\n----                -------------         ------ ----\n-a---        10/01/2023  12:00 AM           12345 autorun.inf\n-a--s         09/15/2023  03:45 PM             0 BOOT\n-a--s         09/15/2023  03:45 PM             0 EFI\n-a--s         09/15/2023  03:45 PM             0 System Volume Information\n-a--s         09/15/2023  03:45 PM             0 Windows\n-a--s         09/15/2023  03:45 PM             0 Program Files\n-a--s         09/15/2023  03:45 PM             0 Program Files (x86)\n-a--s         09/15/2023  03:45 PM             0 Users\n-a--s         09/15/2023  03:45 PM             0 System32\n-a--s         09/15/2023  03:45 PM             0 SharePoint\n-a--s         09/15/2023  03:45 PM             0 temp\n-a--s         09/15/2023  03:45 PM             0 Recovery\n-a--s         09/15/2023  03:45 PM             0 ProgramData\n-a--s         09/15/2023  03:45 PM             0 AppData\n-a--s         09/15/2023  03:45 PM             0 Program Files Common\n-a--s         09/15/2023  03:45 PM             0 Program Files Common (x86)\n-a--s         09/15/2023  03"
             }
         ]
     }
