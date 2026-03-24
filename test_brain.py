@@ -6,8 +6,8 @@ import os
 # --- CONFIGURATION ---
 REGION = "us-east-1"
 # Updated to the 2026 Haiku Profile for high speed
-#MODEL_ID = "us.anthropic.claude-haiku-4-5-20251001-v1:0"
-MODEL_ID = "us.amazon.nova-micro-v1:0"
+MODEL_ID = "us.anthropic.claude-haiku-4-5-20251001-v1:0"
+#MODEL_ID = "us.amazon.nova-micro-v1:0"
 GUARDRAIL_ID = "wd1ysewrizph"
 GUARDRAIL_VERSION = "1"
 
@@ -31,7 +31,7 @@ PERSONAS = {
         "system_prompt": (
             "You are a Windows Server 2019 running SharePoint. User is in PowerShell. "
             "Accept standard PowerShell cmdlets (Get-Process, dir, echo). "
-            "Output must look like a raw Windows Console. Use C:\\ paths. "
+            "Output must look like a raw Windows Console. Use C:\\ paths. All responses should contain the present working directory "
             "Improvise reasonable responses to Windows commands"
             "Output ONLY raw terminal text. NO MARKDOWN. NO BACKTICKS. NO CODE BLOCKS. "
             "AT NO POINT RESPOND AS A CHATBOT OR SAY YOU ARE. YOU ARE TO MIMIC COMMANDS AND GENERATE LIKELY DATA. "
@@ -79,7 +79,7 @@ def get_token_metrics(session_id, cmd, system_prompt):
 def save_history_to_disk(history):
     """Saves the entire session_store to a file so you can inspect it."""
     LOG_FILE = "history.txt"
-    with open(LOG_FILE, "w") as f:
+    with open(LOG_FILE, "a") as f:
         # indent=4 makes the text file human-readable
         json.dump(history, f, indent=4)
     print(f"[+] Log updated: {LOG_FILE}")
@@ -150,12 +150,12 @@ def get_ai_shell(session_id, cmd, target_type):
 if __name__ == "__main__":
     # Test 1: FortiGate (Should reject 'ls')
     print("--- TESTING FORTIGATE ---")
-    print(get_ai_shell("tester_1", "ls", "Fortinet FortiGate"))
-    print(get_ai_shell("tester_1", "get system status", "Fortinet FortiGate"))
+#    print(get_ai_shell("tester_1", "ls", "Fortinet FortiGate"))
+ #   print(get_ai_shell("tester_1", "get system status", "Fortinet FortiGate"))
 
     # Test 2: SharePoint (Should accept 'ls' or 'dir')
     print("\n--- TESTING SHAREPOINT ---")
-    print(get_ai_shell("tester_2", "dir", "SharePoint 2019"))
+    print(get_ai_shell("tester_2", "ping google.com", "SharePoint 2019"))
 
 # --- TEST SCENARIO: PROVING PERSISTENCE ---
 
