@@ -3,6 +3,7 @@ from botocore.exceptions import ClientError
 import time
 import json
 import os
+import argparse
 
 # --- CONFIGURATION ---
 REGION = "us-east-1"
@@ -46,6 +47,19 @@ PERSONAS = {
 session_store = {}
 
 client = boto3.client(service_name='bedrock-runtime', region_name=REGION)
+def runner():
+    parser = argparse.ArgumentParser(description="AI Interface for simulating shell environments in post exploitation environments.")
+    parser.add_argument("--persona", type=str, required=True, help="This is the appliance/application you will be simulating")
+    parser.add_argument("--command", type=str, required=True, help="The command you wish the persona to run")
+
+    args = parser.parse_args()
+    persona = args.persona
+    command = args.command
+    print(f"\n--- TESTING {persona} ---")
+    result = get_ai_shell("tester_1",command ,persona )
+    return result
+
+
 
 def get_token_metrics(session_id, cmd, system_prompt):
     """Calculates exactly how many tokens you are about to send."""
@@ -76,10 +90,8 @@ def get_token_metrics(session_id, cmd, system_prompt):
 def save_history_to_disk(session_id, history):
     """Saves the session history to a specific JSON file."""
     log_file = f"{session_id}_history.json"
-    # Changed "a" to "w" so it writes a clean, valid JSON array each time
     with open(log_file, "w") as f:
         json.dump(history, f, indent=4)
-    # Optional: print(f"[+] Log updated: {log_file}")
 
 def load_history_from_disk(session_id):
     """Recalls the specific session history from disk."""
@@ -146,53 +158,8 @@ def get_ai_shell(session_id, cmd, target_type):
     except ClientError as e:
         return f"System Error: {str(e)}"
 
-# --- TEST SCENARIO: PROVING PERSISTENCE ---
+if __name__ == "__main__":
+    
+    print(runner())
 
-#if __name__ == "__main__":
-#    print("--- TEST 1: Creating a file ---")
-#    print(get_ai_shell("attacker_1", "echo 'password123' > pass.txt", "SharePoint 2019"))
 
-#    print("\n--- TEST 2: Listing files (Persistence Check) ---")
-#    print(get_ai_shell("attacker_1", "ls", "SharePoint 2019"))
-# Step 3: Verify contents
-#    print("\n--- TEST 3: Reading the file ---")
-#    print(get_ai_shell("attacker_1", "cat pass.txt", "SharePoint 2019"))
-
-# --- TEST THE MODULARITY ---
-#if __name__ == "__main__":
-    # Test 1: FortiGate (Should reject 'ls')
-#    print("--- TESTING FORTIGATE ---")
-#    print(get_ai_shell("tester_1", "ls", "Fortinet FortiGate"))
- #   print(get_ai_shell("tester_1", "get system status", "Fortinet FortiGate"))
-
-    # Test 2: SharePoint (Should accept 'ls' or 'dir')
-#    print("\n--- TESTING SHAREPOINT ---")
-#    print(get_ai_shell("tester_2", "ping google.com", "SharePoint 2019"))
-
-# --- TEST SCENARIO: PROVING PERSISTENCE ---
-
-# Step 1: Create a file
-#print("--- TEST 1: Where Am I? ---")
-#print(get_ai_shell("attacker_1", "pwd", "SharePoint 2019"))
-
-# Step 1: Create a file
-#print("--- TEST 2: whoami ---")
-#print(get_ai_shell("attacker_1", "whoami", "SharePoint 2019"))
-
-# Step 1: Create a file
-#print("--- TEST 3: Make File ---")
-#print(get_ai_shell("attacker_1", "echo 'password123' > pass.txt", "SharePoint 2019"))
-
-# Step 2: See if it exists in a new command
-#print("\n--- TEST 4: Listing files (Persistence Check) ---")
-#print(get_ai_shell("attacker_1", "ls", "SharePoint 2019"))
-
-# Step 3: Verify contents
-#print("\n--- TEST 5: Reading the file ---")
-#print(get_ai_shell("attacker_1", "cat pass.txt", "SharePoint 2019"))
-
-#print("\n--- TEST 6: Testing commands ---")
-#print(get_ai_shell("attacker_1", "pwd", "SharePoint 2019"))
-
-print("\n--- TEST 7: Retesting Who I am ---")
-print(get_ai_shell("attacker_1", "whoami", "SharePoint 2019"))
