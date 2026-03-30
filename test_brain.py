@@ -7,7 +7,7 @@ import argparse
 
 # --- CONFIGURATION ---
 REGION = "us-east-1"
-# Updated to the 2026 Haiku Profile for high speed
+
 MODEL_ID = "us.anthropic.claude-haiku-4-5-20251001-v1:0"
 #MODEL_ID = "us.amazon.nova-micro-v1:0"
 GUARDRAIL_ID = "wd1ysewrizph"
@@ -43,7 +43,7 @@ PERSONAS = {
     }
 }
 
-# In-memory store: { "session_1": [message_history], "session_2": [...] }
+# Instantiate Session Store
 session_store = {}
 
 client = boto3.client(service_name='bedrock-runtime', region_name=REGION)
@@ -65,7 +65,7 @@ def get_token_metrics(session_id, cmd, system_prompt):
     """Calculates exactly how many tokens you are about to send."""
     history = session_store.get(session_id, [])
     
-    # We must include the NEW command we're about to add
+    # Including the new command being provided
     temp_messages = history + [{"role": "user", "content": [{"text": cmd}]}]
     
     try:
@@ -116,7 +116,7 @@ def get_ai_shell(session_id, cmd, target_type):
     # 2. Add the NEW attacker command to the history list
     history.append({"role": "user", "content": [{"text": cmd}]})
 
-    # 3. Sliding Window: Keep only the last 20 exchanges to save cost/latency
+    # 3. Sliding Window: Keep only the last 20 exchanges to save token costs
     if len(history) > 20:
         history = history[-20:]
 
@@ -128,7 +128,7 @@ def get_ai_shell(session_id, cmd, target_type):
     try:
         response = client.converse(
             modelId=MODEL_ID,
-            messages=history,  # <--- Sending the RECALLED history
+            messages=history,
             system=[{"text": system_prompt}],
             inferenceConfig={
                 "maxTokens": 500, 
