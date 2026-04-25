@@ -96,16 +96,11 @@ def get_token_metrics(session_id, cmd, system_prompt):
     """Calculates exactly how many tokens you are about to send."""
     history = session_store.get(session_id, [])
     
-<<<<<<< HEAD
     # We must include the NEW command we're about to add
     history.append({
     "role": "user",
     "content": [{"text": f"Command: {cmd}"}]
 })
-=======
-    # Including the new command being provided
-    temp_messages = history + [{"role": "user", "content": [{"text": cmd}]}]
->>>>>>> 98b54def8c94ff7300b7805891b9babe4db4e812
     
     try:
         token_data = client.count_tokens(
