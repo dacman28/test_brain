@@ -23,7 +23,7 @@ A high-fidelity, session-persistent honeypot "Brain" powered by **Amazon Bedrock
 ```text
 .
 ├── test_brain.py         # The core "Brain" logic and Bedrock interface
-├── history.txt           # Real-time session logging (JSON format)
+├── tester_1_history.json         # Real-time session logging. Name is replaced with the actor. For current purposes it is tester1 (JSON format)
 ```
 ## ⚙️ Configuration
 
@@ -37,10 +37,16 @@ The framework is driven by the `PERSONAS` dictionary within `test_brain.py`. Thi
 
 The script includes built-in logging and safety features to monitor attacker behavior and protect your AWS infrastructure:
 
-* **Automated Logging**: Every interaction is captured in a structured JSON format and saved to `history.txt` for deep forensic analysis.
+* **Automated Logging**: Every interaction is captured in a structured JSON format and saved to `tester_1_history.json` for deep forensic analysis.
 * **Session Persistence**: The `session_store` tracks message history per session ID, ensuring attackers stay within their own isolated "timeline".
 * **Defensive Guardrails**: The framework integrates with **Amazon Bedrock Guardrails** to prevent prompt injections or the leakage of sensitive data.
 * **Identity Management**: This script is designed for deployment using **IAM Task Roles** rather than hardcoded credentials, ensuring secure communication with Bedrock.
+
+## Usage:
+This is a basic command. There is a "Fortinet FortiGate" option, but it is not widely tested.
+```
+python3 .\test_brain.py --persona "SharePoint 2019" --command "whoami"
+```
 
 ## 🗺️ Roadmap
 

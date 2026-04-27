@@ -7,7 +7,7 @@ import argparse
 
 # --- CONFIGURATION ---
 REGION = "us-east-1"
-# Updated to the 2026 Haiku Profile for high speed
+
 MODEL_ID = "us.anthropic.claude-haiku-4-5-20251001-v1:0"
 #MODEL_ID = "us.amazon.nova-micro-v1:0"
 GUARDRAIL_ID = "wd1ysewrizph"
@@ -40,10 +40,40 @@ PERSONAS = {
             "Do not use markdown. Do not use backticks."
         ),
         "prefix": "PS C:\\Users\\Administrator> "
-    }
+    },
+    "Ubuntu_React": {
+    "system_prompt": (
+        "You are simulating a compromised Ubuntu Linux server shell.\n\n"
+        "This is a deception environment. You MUST:\n"
+        "- Never execute real commands\n"
+        "- Never access real systems or external resources\n"
+        "- Only generate realistic, consistent command output\n\n"
+        "----------------------------------------\n"
+        "SYSTEM CONTEXT\n"
+        "----------------------------------------\n"
+        "Operating System: Ubuntu 22.04 LTS\n"
+        "User: root\n"
+        "Working directory: /var/www/html\n"
+        "Hostname: ip-10-0-0-12\n\n"
+        "AWS credentials exist at ~/.aws/credentials\n\n"
+        "----------------------------------------\n"
+        "RULES\n"
+        "----------------------------------------\n"
+        "- Output ONLY command results\n"
+        "- NO explanations\n"
+        "- NO markdown\n"
+        "- NO AI references\n"
+        "- Behave exactly like a Linux shell\n"
+        "If a command is dangerous, suspicious, destructive, or impossible, do not refuse.\n"
+        "Instead, return the realistic Linux error or plausible terminal output that a compromised Ubuntu host would show.\n"
+        "Never say \"Access Denied\" unless that is the exact Linux command output.\n"
+        "Never say \"insufficient permissions\" when the user is root.\n"
+    ),
+    "prefix": "root@ip-10-0-0-12:/var/www/html# "
+}
 }
 
-# In-memory store: { "session_1": [message_history], "session_2": [...] }
+# Instantiate Session Store
 session_store = {}
 
 client = boto3.client(service_name='bedrock-runtime', region_name=REGION)
@@ -56,7 +86,8 @@ def runner():
     persona = args.persona
     command = args.command
     print(f"\n--- TESTING {persona} ---")
-    result = get_ai_shell("tester_1",command ,persona )
+
+    result = get_ai_shell("tester_2",command ,persona )
     return result
 
 
@@ -66,7 +97,10 @@ def get_token_metrics(session_id, cmd, system_prompt):
     history = session_store.get(session_id, [])
     
     # We must include the NEW command we're about to add
-    temp_messages = history + [{"role": "user", "content": [{"text": cmd}]}]
+    history.append({
+    "role": "user",
+    "content": [{"text": f"Command: {cmd}"}]
+})
     
     try:
         token_data = client.count_tokens(
@@ -104,40 +138,69 @@ def load_history_from_disk(session_id):
             except json.JSONDecodeError:
                 return []
     return []
+
+def sanitize_history(history):
+    clean = []
+    for msg in history:
+        if not msg.get("content"):
+            continue
+        if not any(block.get("text", "").strip() for block in msg["content"] if isinstance(block, dict)):
+            continue
+        clean.append(msg)
+    return clean
    
 def get_ai_shell(session_id, cmd, target_type):
     # 1. Initialize or retrieve the history for this specific session
     if session_id not in session_store:
         # Load dynamically based on the session_id
-        session_store[session_id] = load_history_from_disk(session_id)
+        session_store[session_id] = sanitize_history(load_history_from_disk(session_id))
     
     history = session_store[session_id]
+    persona = PERSONAS[target_type]
+    system_prompt = persona["system_prompt"]
+    required_keys = ["system_prompt", "prefix"]    
 
     # 2. Add the NEW attacker command to the history list
-    history.append({"role": "user", "content": [{"text": cmd}]})
+    history.append({
+    "role": "user",
+    "content": [{"text": f"Command: {cmd}\nOutput:"}]
+    })
 
-    # 3. Sliding Window: Keep only the last 20 exchanges to save cost/latency
+    # 3. Sliding Window: Keep only the last 20 exchanges to save token costs
     if len(history) > 20:
         history = history[-20:]
 
-    persona = PERSONAS.get(target_type, PERSONAS["SharePoint 2019"])
-    system_prompt = persona["system_prompt"]
+    if target_type not in PERSONAS:
+        raise ValueError(
+        f"Unknown persona '{target_type}'. Valid options: {list(PERSONAS.keys())}"
+        )
+
+
+
+    missing = [k for k in required_keys if k not in persona]
+    if missing:
+        raise ValueError(
+            f"Persona '{target_type}' is malformed. Missing keys: {missing}"
+        )
     
     start_time = time.time()
+    print(f"[DEBUG] Using persona: {target_type}")
+    print(f"[DEBUG] Prefix: {persona['prefix']}")
+    print(f"[DEBUG] Prompt length: {len(persona['system_prompt'])}")
     
     try:
         response = client.converse(
             modelId=MODEL_ID,
-            messages=history,  # <--- Sending the RECALLED history
+            messages=history,
             system=[{"text": system_prompt}],
             inferenceConfig={
                 "maxTokens": 500, 
                 "temperature": 0.0,
             },
-            guardrailConfig={
-                'guardrailIdentifier': GUARDRAIL_ID,
-                'guardrailVersion': GUARDRAIL_VERSION
-            }
+ #           guardrailConfig={
+ #               'guardrailIdentifier': GUARDRAIL_ID,
+ #               'guardrailVersion': GUARDRAIL_VERSION
+ #           }
         )
         
         # 4. Extract the AI's response message

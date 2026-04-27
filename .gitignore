@@ -4,6 +4,8 @@
 ## Get latest from https://github.com/github/gitignore/blob/master/VisualStudio.gitignore
 # User Customized
 history.txt
+nogit*
+*.json
 # User-specific files
 *.rsuser
 *.suo
